@@ -40,8 +40,28 @@ export async function middleware(req: NextRequest) {
   const publicRoutes = ['/login', '/api/whatsapp/webhook'];
   const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route));
 
+  // Protected routes that require authentication
+  const protectedRoutes = [
+    '/dashboard',
+    '/conversations',
+    '/orders',
+    '/escalations',
+    '/customers',
+    '/settings',
+    '/api/conversations',
+    '/api/orders',
+    '/api/escalations',
+    '/api/customers',
+    '/api/analytics',
+    '/api/locations',
+    '/api/services',
+    '/api/service-categories',
+    '/api/knowledge-base',
+  ];
+  const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route));
+
   // If not authenticated and trying to access protected route
-  if (!session && !isPublicRoute) {
+  if (!session && isProtectedRoute) {
     const redirectUrl = new URL('/login', req.url);
     return NextResponse.redirect(redirectUrl);
   }
