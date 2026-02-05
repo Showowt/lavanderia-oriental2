@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
 interface ConversationContext {
   customerId: string;
   customerName?: string;
-  conversationHistory: Array<{ role: string; content: string }>;
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>;
   orderHistory?: any[];
   language: string;
 }
@@ -61,8 +61,11 @@ Responde de forma amigable, profesional y concisa.`;
       max_tokens: 1000,
       system: systemPrompt + knowledgeContext,
       messages: [
-        ...context.conversationHistory.slice(-10), // Last 10 messages
-        { role: 'user', content: message },
+        ...context.conversationHistory.slice(-10).map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content
+        })),
+        { role: 'user' as const, content: message },
       ],
     });
 
@@ -71,59 +74,41 @@ Responde de forma amigable, profesional y concisa.`;
       : 'Lo siento, no pude procesar tu mensaje.';
 
     // Detect escalation needs
-    const shouldEscalate = detectEscalation(message, aiResponse);
-
-    // Classify intent
-    const intent = classifyIntent(message);
+    const shouldEscalate = 
+      aiResponse.toLowerCase().includes('escalar') ||
+      aiResponse.toLowerCase().includes('humano') ||
+      message.toLowerCase().includes('queja') ||
+      message.toLowerCase().includes('reclamo');
 
     return {
       response: aiResponse,
       shouldEscalate,
-      intent,
+      intent: detectIntent(message),
     };
   } catch (error) {
-    console.error('AI generation error:', error);
+    console.error('AI Engine Error:', error);
     return {
-      response: 'Disculpa, estoy teniendo problemas técnicos. Un agente te contactará pronto.',
+      response: 'Lo siento, hubo un problema al procesar tu mensaje. ¿Podrías intentar de nuevo?',
       shouldEscalate: true,
     };
   }
 }
 
-function detectEscalation(userMessage: string, aiResponse: string): boolean {
-  const escalationKeywords = [
-    'hablar con humano',
-    'hablar con persona',
-    'agente',
-    'reclamo',
-    'queja',
-    'problema',
-    'no funciona',
-    'mal servicio',
-  ];
-
-  const lowerMessage = userMessage.toLowerCase();
-  return escalationKeywords.some((keyword) => lowerMessage.includes(keyword));
-}
-
-function classifyIntent(message: string): string {
-  const lowerMessage = message.toLowerCase();
-
-  if (lowerMessage.includes('precio') || lowerMessage.includes('costo') || lowerMessage.includes('tarifa')) {
-    return 'pricing';
+function detectIntent(message: string): string {
+  const lower = message.toLowerCase();
+  
+  if (lower.includes('precio') || lower.includes('cuesta') || lower.includes('cobran')) {
+    return 'pricing_inquiry';
   }
-  if (lowerMessage.includes('horario') || lowerMessage.includes('abierto') || lowerMessage.includes('cerrado')) {
-    return 'hours';
+  if (lower.includes('horario') || lower.includes('abierto') || lower.includes('hora')) {
+    return 'hours_inquiry';
   }
-  if (lowerMessage.includes('ubicación') || lowerMessage.includes('dirección') || lowerMessage.includes('dónde')) {
-    return 'location';
+  if (lower.includes('ubicación') || lower.includes('donde') || lower.includes('dirección')) {
+    return 'location_inquiry';
   }
-  if (lowerMessage.includes('orden') || lowerMessage.includes('servicio') || lowerMessage.includes('lavar')) {
-    return 'order';
+  if (lower.includes('orden') || lower.includes('servicio') || lower.includes('lavar')) {
+    return 'service_request';
   }
-  if (lowerMessage.includes('queja') || lowerMessage.includes('reclamo') || lowerMessage.includes('problema')) {
-    return 'complaint';
-  }
-
+  
   return 'general_inquiry';
 }
