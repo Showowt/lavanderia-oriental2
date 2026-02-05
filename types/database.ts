@@ -92,11 +92,11 @@ export interface Service {
   name: string;
   description: string | null;
   price: number;
-  unit: 'piece' | 'kg' | 'load' | 'item';
-  estimated_hours: number | null;
+  unit: string;
+  estimated_time: string | null;
   is_active: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'in_progress' | 'ready' | 'delivered' | 'cancelled';
