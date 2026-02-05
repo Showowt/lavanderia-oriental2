@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase-browser';
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { NotificationBell, RealtimeIndicator } from '@/components/realtime';
 
 const navigation = [
   {
@@ -219,6 +220,14 @@ export function Sidebar({ className }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* Realtime Status & Notifications */}
+      <div className="px-4 py-3 border-t border-slate-100">
+        <div className="flex items-center justify-between">
+          <RealtimeIndicator />
+          <NotificationBell />
+        </div>
+      </div>
 
       {/* User Footer */}
       <div className="p-3 border-t border-slate-100">

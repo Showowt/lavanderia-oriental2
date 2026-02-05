@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { ChatWindow } from '@/components/conversations/ChatWindow';
+import { RealtimeChatWindow } from '@/components/conversations/RealtimeChatWindow';
 import { CustomerInfo } from '@/components/customers/CustomerCard';
 import { ConversationActions } from './ConversationActions';
 import type { ConversationWithMessages } from '@/types';
@@ -67,8 +67,9 @@ export default async function ConversationDetailPage({
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Area */}
         <div className="flex-1 flex flex-col bg-gray-50">
-          <ChatWindow
-            messages={conversation.messages}
+          <RealtimeChatWindow
+            conversationId={conversation.id}
+            initialMessages={conversation.messages}
             className="flex-1"
           />
           <ConversationActions
