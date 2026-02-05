@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
-        {children}
+        <DashboardLayout>{children}</DashboardLayout>
       </body>
     </html>
   );

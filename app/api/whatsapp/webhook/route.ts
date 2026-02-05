@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(20);
 
-    const conversationHistory = (messages || []).map((msg) => ({
-      role: msg.direction === 'inbound' ? 'user' : 'assistant',
-      content: msg.content,
+    const conversationHistory: { role: 'user' | 'assistant'; content: string }[] = (messages || []).map((msg) => ({
+      role: (msg.direction === 'inbound' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: msg.content as string,
     }));
 
     // Generate AI response
