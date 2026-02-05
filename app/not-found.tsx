@@ -1,33 +1,124 @@
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 
 export default function NotFound() {
+  const [sockCount, setSockCount] = useState(0);
+  const [message, setMessage] = useState('');
+
+  const messages = [
+    '¿Buscando un calcetín perdido?',
+    'Esta página se fue con la lavada...',
+    'Parece que alguien se llevó esta página',
+    '404: Página en el ciclo de secado',
+    'Esta ruta necesita planchado',
+  ];
+
+  useEffect(() => {
+    setMessage(messages[Math.floor(Math.random() * messages.length)]);
+  }, []);
+
+  const handleSockClick = () => {
+    setSockCount((prev) => prev + 1);
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] p-6">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <svg
-          className="w-8 h-8 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-slate-50 overflow-hidden">
+      {/* Floating socks background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-float text-4xl"
+            style={{
+              left: `${10 + (i * 12)}%`,
+              top: `${10 + (i * 10)}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${4 + (i % 4)}s`,
+              opacity: 0.3,
+            }}
+          >
+            🧦
+          </div>
+        ))}
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">
-        Página no encontrada
-      </h2>
-      <p className="text-gray-600 text-center max-w-md mb-6">
-        La página que buscas no existe o ha sido movida.
-      </p>
-      <Link href="/dashboard">
-        <Button>Volver al Dashboard</Button>
-      </Link>
+
+      <div className="relative text-center px-4 animate-fade-in-up">
+        {/* Washing machine animation */}
+        <div className="relative inline-block mb-8">
+          <div className="w-40 h-40 bg-white rounded-3xl shadow-strong border-4 border-slate-200 relative overflow-hidden">
+            {/* Door frame */}
+            <div className="absolute inset-4 rounded-full border-4 border-slate-300 bg-gradient-to-br from-brand-100 to-brand-200">
+              {/* Spinning clothes */}
+              <div className="absolute inset-2 rounded-full bg-brand-50 animate-wash-spin flex items-center justify-center">
+                <span className="text-4xl">👕</span>
+              </div>
+            </div>
+            {/* Control panel */}
+            <div className="absolute top-2 right-2 flex flex-col gap-1">
+              <div className="w-2 h-2 rounded-full bg-error-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-slate-300" />
+            </div>
+          </div>
+          {/* Steam */}
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <span className="text-xl animate-steam" style={{ animationDelay: '0s' }}>💨</span>
+            <span className="text-xl animate-steam" style={{ animationDelay: '0.5s' }}>💨</span>
+            <span className="text-xl animate-steam" style={{ animationDelay: '1s' }}>💨</span>
+          </div>
+        </div>
+
+        {/* Error code */}
+        <div className="mb-4">
+          <span className="text-8xl font-bold bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
+            404
+          </span>
+        </div>
+
+        {/* Message */}
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          {message}
+        </h1>
+        <p className="text-slate-500 mb-8 max-w-md mx-auto">
+          La página que buscas no existe o fue movida a otra ubicación.
+          Pero no te preocupes, tu ropa está segura con nosotros.
+        </p>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/dashboard">
+            <Button size="lg">
+              Volver al Dashboard
+            </Button>
+          </Link>
+          <Link href="/conversations">
+            <Button variant="secondary" size="lg">
+              Ver Conversaciones
+            </Button>
+          </Link>
+        </div>
+
+        {/* Easter egg: Clickable sock */}
+        <div className="mt-12">
+          <button
+            onClick={handleSockClick}
+            className="text-4xl hover:scale-125 transition-transform cursor-pointer focus:outline-none"
+            title="¿Encontraste el calcetín?"
+          >
+            🧦
+          </button>
+          {sockCount > 0 && (
+            <p className="text-sm text-brand-600 mt-2 animate-fade-in">
+              {sockCount === 1 && '¡Encontraste un calcetín perdido!'}
+              {sockCount > 1 && sockCount < 5 && `${sockCount} calcetines encontrados...`}
+              {sockCount >= 5 && sockCount < 10 && '¡Eres un experto encontrando calcetines!'}
+              {sockCount >= 10 && '🎉 ¡INCREÍBLE! Has encontrado todos los calcetines perdidos del mundo.'}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
