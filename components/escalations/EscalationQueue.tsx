@@ -64,12 +64,12 @@ function EscalationCard({
       <div
         className={`h-1 ${
           escalation.priority === 'urgent'
-            ? 'bg-red-500'
+            ? 'bg-error-500'
             : escalation.priority === 'high'
-            ? 'bg-orange-500'
+            ? 'bg-accent-500'
             : escalation.priority === 'medium'
-            ? 'bg-yellow-500'
-            : 'bg-gray-300'
+            ? 'bg-warning-500'
+            : 'bg-slate-300'
         }`}
       />
 
@@ -79,20 +79,20 @@ function EscalationCard({
             <div className="flex items-center gap-2">
               <Link
                 href={`/conversations/${escalation.conversation_id}`}
-                className="text-sm font-medium text-gray-900 hover:text-blue-600"
+                className="text-sm font-semibold text-slate-900 hover:text-brand-600 transition-colors"
               >
                 {customer?.name || 'Cliente'}
               </Link>
               <Badge status={escalation.priority} />
               <Badge status={escalation.status} />
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               {customer?.phone ? formatPhone(customer.phone) : 'Sin teléfono'}
             </p>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-slate-600 mt-2">
               <span className="font-medium">Razón:</span> {escalation.reason}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               {formatRelativeTime(escalation.created_at)}
               {isClaimed && escalation.claimed_by && (
                 <span> - Atendido por: {escalation.claimed_by}</span>
@@ -138,11 +138,11 @@ export function EscalationAlerts({ escalations }: EscalationAlertsProps) {
   }
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+    <div className="bg-error-50 border border-error-200 rounded-2xl p-4 animate-fade-in">
       <div className="flex items-center gap-3">
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-error-100 flex items-center justify-center">
           <svg
-            className="w-5 h-5 text-red-600"
+            className="w-5 h-5 text-error-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -156,11 +156,11 @@ export function EscalationAlerts({ escalations }: EscalationAlertsProps) {
           </svg>
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-red-800">
+          <p className="text-sm font-semibold text-error-800">
             {pendingCount} escalación{pendingCount !== 1 ? 'es' : ''} pendiente
             {pendingCount !== 1 ? 's' : ''}
           </p>
-          <p className="text-xs text-red-600 mt-0.5">
+          <p className="text-xs text-error-600 mt-0.5">
             Requieren atención inmediata
           </p>
         </div>

@@ -39,7 +39,52 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
 export function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
-      <LoadingSpinner size="lg" className="text-blue-600" />
+      <div className="flex flex-col items-center gap-3">
+        <LoadingSpinner size="lg" className="text-brand-600" />
+        <p className="text-sm text-slate-500 animate-pulse">Cargando...</p>
+      </div>
+    </div>
+  );
+}
+
+export function CardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/60 shadow-soft p-6 animate-pulse">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-slate-200 rounded-xl" />
+        <div className="flex-1">
+          <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
+          <div className="h-3 bg-slate-100 rounded w-1/4" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="h-3 bg-slate-100 rounded w-full" />
+        <div className="h-3 bg-slate-100 rounded w-5/6" />
+        <div className="h-3 bg-slate-100 rounded w-4/6" />
+      </div>
+    </div>
+  );
+}
+
+export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="animate-pulse">
+      <div className="border-b border-slate-100 pb-4 mb-4">
+        <div className="flex gap-4">
+          <div className="h-4 bg-slate-200 rounded w-1/4" />
+          <div className="h-4 bg-slate-200 rounded w-1/4" />
+          <div className="h-4 bg-slate-200 rounded w-1/4" />
+          <div className="h-4 bg-slate-200 rounded w-1/4" />
+        </div>
+      </div>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex gap-4 py-4 border-b border-slate-50">
+          <div className="h-4 bg-slate-100 rounded w-1/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/4" />
+          <div className="h-4 bg-slate-100 rounded w-1/4" />
+        </div>
+      ))}
     </div>
   );
 }

@@ -18,7 +18,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
           >
             {label}
           </label>
@@ -27,19 +27,20 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            'block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-offset-0',
+            'block w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm transition-all duration-200 ease-out',
+            'text-slate-900 placeholder:text-slate-400',
+            'focus:outline-none focus:ring-4 focus:ring-offset-0',
+            'hover:border-slate-300',
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20',
-            'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
+              ? 'border-error-300 focus:border-error-500 focus:ring-error-500/10'
+              : 'border-slate-200 focus:border-brand-500 focus:ring-brand-500/10',
+            'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed disabled:hover:border-slate-200',
             className
           )}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-        {hint && !error && <p className="mt-1 text-sm text-gray-500">{hint}</p>}
+        {error && <p className="mt-1.5 text-sm text-error-600">{error}</p>}
+        {hint && !error && <p className="mt-1.5 text-sm text-slate-500">{hint}</p>}
       </div>
     );
   }
@@ -66,7 +67,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
           >
             {label}
           </label>
@@ -75,20 +76,21 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            'block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-offset-0',
+            'block w-full rounded-xl border px-4 py-2.5 text-sm shadow-sm transition-all duration-200 ease-out',
+            'text-slate-900 placeholder:text-slate-400',
+            'focus:outline-none focus:ring-4 focus:ring-offset-0',
+            'hover:border-slate-300',
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20',
-            'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
+              ? 'border-error-300 focus:border-error-500 focus:ring-error-500/10'
+              : 'border-slate-200 focus:border-brand-500 focus:ring-brand-500/10',
+            'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed disabled:hover:border-slate-200',
             'resize-none',
             className
           )}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-        {hint && !error && <p className="mt-1 text-sm text-gray-500">{hint}</p>}
+        {error && <p className="mt-1.5 text-sm text-error-600">{error}</p>}
+        {hint && !error && <p className="mt-1.5 text-sm text-slate-500">{hint}</p>}
       </div>
     );
   }

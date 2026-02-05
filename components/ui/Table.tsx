@@ -10,7 +10,7 @@ interface TableProps {
 export function Table({ children, className }: TableProps) {
   return (
     <div className={cn('overflow-x-auto', className)}>
-      <table className="min-w-full divide-y divide-gray-200">{children}</table>
+      <table className="min-w-full divide-y divide-slate-100">{children}</table>
     </div>
   );
 }
@@ -21,7 +21,7 @@ interface TableHeaderProps {
 }
 
 export function TableHeader({ children, className }: TableHeaderProps) {
-  return <thead className={cn('bg-gray-50', className)}>{children}</thead>;
+  return <thead className={cn('bg-slate-50/50', className)}>{children}</thead>;
 }
 
 interface TableBodyProps {
@@ -31,7 +31,7 @@ interface TableBodyProps {
 
 export function TableBody({ children, className }: TableBodyProps) {
   return (
-    <tbody className={cn('bg-white divide-y divide-gray-200', className)}>
+    <tbody className={cn('bg-white divide-y divide-slate-50', className)}>
       {children}
     </tbody>
   );
@@ -53,7 +53,8 @@ export function TableRow({
   return (
     <tr
       className={cn(
-        clickable && 'cursor-pointer hover:bg-gray-50 transition-colors',
+        'transition-colors duration-150',
+        clickable && 'cursor-pointer hover:bg-brand-50/50',
         className
       )}
       onClick={onClick}
@@ -81,27 +82,27 @@ export function TableHead({
   return (
     <th
       className={cn(
-        'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider',
-        sortable && 'cursor-pointer hover:text-gray-700 select-none',
+        'px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider',
+        sortable && 'cursor-pointer hover:text-slate-700 select-none transition-colors',
         className
       )}
       onClick={sortable ? onSort : undefined}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {children}
         {sortable && (
-          <span className="text-gray-400">
+          <span className="text-slate-400">
             {sorted === 'asc' ? (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 6.414l-3.293 3.293a1 1 0 01-1.414 0z" />
               </svg>
             ) : sorted === 'desc' ? (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 text-brand-500" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 13.586l3.293-3.293a1 1 0 011.414 0z" />
               </svg>
             ) : (
               <svg
-                className="w-4 h-4 opacity-50"
+                className="w-4 h-4 opacity-40"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -124,7 +125,7 @@ export function TableCell({ children, className }: TableCellProps) {
   return (
     <td
       className={cn(
-        'px-6 py-4 whitespace-nowrap text-sm text-gray-900',
+        'px-6 py-4 whitespace-nowrap text-sm text-slate-900',
         className
       )}
     >

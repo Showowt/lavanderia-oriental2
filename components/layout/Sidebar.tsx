@@ -162,26 +162,31 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex flex-col w-64 bg-white border-r border-gray-200',
+        'flex flex-col w-64 bg-white border-r border-slate-200/60',
         className
       )}
     >
       {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex items-center h-16 px-6 border-b border-slate-100">
+        <Link href="/dashboard" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
             </svg>
           </div>
-          <span className="font-semibold text-gray-900">
-            Lavandería Oriental
-          </span>
+          <div>
+            <span className="font-semibold text-slate-900 text-sm">
+              Lavandería Oriental
+            </span>
+            <span className="block text-[10px] text-slate-400 font-medium tracking-wide uppercase">
+              Panel Admin
+            </span>
+          </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -192,39 +197,45 @@ export function Sidebar({ className }: SidebarProps) {
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-brand-50 text-brand-700 shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               )}
             >
               <span
-                className={cn(isActive ? 'text-blue-600' : 'text-gray-400')}
+                className={cn(
+                  'transition-colors',
+                  isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-500'
+                )}
               >
                 {item.icon}
               </span>
               {item.name}
+              {isActive && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-500" />
+              )}
             </Link>
           );
         })}
       </nav>
 
       {/* User Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-medium">
+      <div className="p-3 border-t border-slate-100">
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50/80">
+          <div className="w-9 h-9 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center shadow-sm">
+            <span className="text-white text-sm font-semibold">
               {userName.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+            <p className="text-sm font-medium text-slate-900 truncate">{userName}</p>
+            <p className="text-xs text-slate-500 truncate">{userEmail}</p>
           </div>
           <button
             onClick={handleSignOut}
             disabled={loading}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-all duration-200 disabled:opacity-50"
             title="Cerrar sesión"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

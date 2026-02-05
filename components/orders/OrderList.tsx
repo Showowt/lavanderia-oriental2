@@ -46,18 +46,18 @@ export function OrderList({ orders }: OrderListProps) {
             <TableCell>
               <Link
                 href={`/orders/${order.id}`}
-                className="flex flex-col hover:text-blue-600"
+                className="flex flex-col hover:text-brand-600 transition-colors"
               >
-                <span className="font-medium">
+                <span className="font-medium text-slate-900">
                   {order.customer?.name || 'Cliente'}
                 </span>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-slate-500">
                   {formatPhone(order.customer?.phone || '')}
                 </span>
               </Link>
             </TableCell>
             <TableCell>
-              <span className="text-gray-600">
+              <span className="text-slate-600">
                 {order.location?.name || 'Sin ubicación'}
               </span>
             </TableCell>
@@ -65,10 +65,10 @@ export function OrderList({ orders }: OrderListProps) {
               <Badge status={order.status} />
             </TableCell>
             <TableCell>
-              <span className="font-medium">{formatCurrency(order.total)}</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(order.total)}</span>
             </TableCell>
             <TableCell>
-              <span className="text-gray-500">{formatDate(order.created_at)}</span>
+              <span className="text-slate-500">{formatDate(order.created_at)}</span>
             </TableCell>
           </TableRow>
         ))}
@@ -85,30 +85,30 @@ interface RecentOrdersProps {
 export function RecentOrders({ orders }: RecentOrdersProps) {
   if (orders.length === 0) {
     return (
-      <p className="text-sm text-gray-500 text-center py-4">
+      <p className="text-sm text-slate-500 text-center py-8">
         Sin órdenes recientes
       </p>
     );
   }
 
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="divide-y divide-slate-50">
       {orders.slice(0, 5).map((order) => (
         <Link
           key={order.id}
           href={`/orders/${order.id}`}
-          className="flex items-center justify-between py-3 px-1 hover:bg-gray-50 transition-colors rounded"
+          className="flex items-center justify-between py-3.5 px-4 hover:bg-brand-50/50 transition-all duration-150 group"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-sm font-medium text-slate-900 truncate group-hover:text-brand-700">
               {order.customer?.name || formatPhone(order.customer?.phone || '')}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500 mt-0.5">
               {order.items?.length || 0} servicios
             </p>
           </div>
-          <div className="flex-shrink-0 ml-2 text-right">
-            <p className="text-sm font-medium text-gray-900">
+          <div className="flex-shrink-0 ml-3 text-right">
+            <p className="text-sm font-semibold text-slate-900">
               {formatCurrency(order.total)}
             </p>
             <Badge status={order.status} className="mt-1" />

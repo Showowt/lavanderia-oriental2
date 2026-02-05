@@ -122,26 +122,26 @@ export function getInitials(name: string | null): string {
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     // Conversation statuses
-    active: 'bg-green-100 text-green-800',
-    escalated: 'bg-red-100 text-red-800',
-    resolved: 'bg-gray-100 text-gray-800',
-    closed: 'bg-gray-100 text-gray-600',
+    active: 'bg-success-100 text-success-700',
+    escalated: 'bg-error-100 text-error-700',
+    resolved: 'bg-slate-100 text-slate-700',
+    closed: 'bg-slate-100 text-slate-600',
     // Order statuses
-    pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-purple-100 text-purple-800',
-    ready: 'bg-green-100 text-green-800',
-    delivered: 'bg-gray-100 text-gray-800',
-    cancelled: 'bg-red-100 text-red-800',
+    pending: 'bg-warning-100 text-warning-700',
+    confirmed: 'bg-brand-100 text-brand-700',
+    in_progress: 'bg-accent-100 text-accent-700',
+    ready: 'bg-success-100 text-success-700',
+    delivered: 'bg-slate-100 text-slate-700',
+    cancelled: 'bg-error-100 text-error-700',
     // Escalation statuses
-    claimed: 'bg-blue-100 text-blue-800',
+    claimed: 'bg-brand-100 text-brand-700',
     // Priority
-    low: 'bg-gray-100 text-gray-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-orange-100 text-orange-800',
-    urgent: 'bg-red-100 text-red-800',
+    low: 'bg-slate-100 text-slate-700',
+    medium: 'bg-warning-100 text-warning-700',
+    high: 'bg-accent-100 text-accent-700',
+    urgent: 'bg-error-100 text-error-700',
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[status] || 'bg-slate-100 text-slate-700';
 }
 
 /**
