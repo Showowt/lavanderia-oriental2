@@ -64,27 +64,36 @@ export async function middleware(req: NextRequest) {
     // Redirect from login to appropriate dashboard
     if (pathname === '/login') {
       // Get user role from employees table
-      const { data: employee } = await supabase
+      const { data: employee, error } = await supabase
         .from('employees')
         .select('role')
         .eq('auth_id', session.user.id)
         .single();
+
+      // If table doesn't exist or no record, let login page handle it
+      if (error) {
+        return res;
+      }
 
       if (employee?.role === 'admin') {
         return NextResponse.redirect(new URL('/admin/dashboard', req.url));
       } else if (employee) {
         return NextResponse.redirect(new URL('/employee/dashboard', req.url));
       }
-      // If no employee record, let them stay on login (will show error)
     }
 
     // Handle legacy routes - redirect to role-based routes
     if (isLegacyRoute) {
-      const { data: employee } = await supabase
+      const { data: employee, error } = await supabase
         .from('employees')
         .select('role')
         .eq('auth_id', session.user.id)
         .single();
+
+      // If error, redirect to admin by default for first-time setup
+      if (error) {
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+      }
 
       if (employee?.role === 'admin') {
         // Map legacy routes to admin routes
@@ -98,11 +107,16 @@ export async function middleware(req: NextRequest) {
 
     // Check admin route access
     if (isAdminRoute) {
-      const { data: employee } = await supabase
+      const { data: employee, error } = await supabase
         .from('employees')
         .select('role')
         .eq('auth_id', session.user.id)
         .single();
+
+      // If error (table doesn't exist or no record), allow access for first-time setup
+      if (error) {
+        return res;
+      }
 
       if (employee?.role !== 'admin') {
         // Not an admin, redirect to employee dashboard
