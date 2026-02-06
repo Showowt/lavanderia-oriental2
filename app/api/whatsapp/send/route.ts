@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import twilio from 'twilio';
+import { supabaseAdmin } from '@/lib/supabase';
+import { sendWhatsAppMessage } from '@/lib/notifications';
 
 const sendMessageSchema = z.object({
-  to: z.string().min(10),
-  message: z.string().min(1).max(4096),
+  to: z.string().min(10, 'Phone number required'),
+  message: z.string().min(1, 'Message is required').max(4096, 'Message too long'),
+  conversationId: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),
 });
-
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,22 +17,80 @@ export async function POST(request: NextRequest) {
 
     // Normalize phone number
     let phoneNumber = data.to.replace(/\D/g, '');
-    if (!phoneNumber.startsWith('52') && phoneNumber.length === 10) {
-      phoneNumber = '52' + phoneNumber;
+    // Handle El Salvador numbers (503 country code)
+    if (!phoneNumber.startsWith('503') && phoneNumber.length === 8) {
+      phoneNumber = '503' + phoneNumber;
+    }
+    // Add + prefix if not present
+    if (!phoneNumber.startsWith('+')) {
+      phoneNumber = '+' + phoneNumber;
     }
 
-    // Send via Twilio WhatsApp
-    const message = await twilioClient.messages.create({
-      body: data.message,
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-      to: `whatsapp:+${phoneNumber}`,
-    });
+    // Send via WhatsApp using notification service
+    const result = await sendWhatsAppMessage(phoneNumber, data.message);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Error al enviar mensaje', message: result.error || 'Twilio no configurado' },
+        { status: 500 }
+      );
+    }
+
+    // Save message to conversation if conversationId provided
+    if (data.conversationId) {
+      try {
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: data.conversationId,
+          direction: 'outbound',
+          content: data.message,
+          message_type: 'text',
+          ai_generated: false,
+          external_id: result.messageId || null,
+        });
+
+        // Update conversation
+        const { data: conv } = await supabaseAdmin
+          .from('conversations')
+          .select('message_count')
+          .eq('id', data.conversationId)
+          .single();
+
+        await supabaseAdmin
+          .from('conversations')
+          .update({
+            message_count: (conv?.message_count || 0) + 1,
+            last_message_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.conversationId);
+      } catch (e) {
+        console.error('Error saving message to conversation:', e);
+      }
+    }
+
+    // Log notification for dashboard
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        type: 'message',
+        title: 'Mensaje enviado',
+        message: `WhatsApp enviado a ${phoneNumber}`,
+        metadata: {
+          phone: phoneNumber,
+          message_preview: data.message.substring(0, 100),
+          message_id: result.messageId,
+          customer_id: data.customerId,
+          conversation_id: data.conversationId,
+        },
+      });
+    } catch (e) {
+      console.error('Error logging notification:', e);
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        sid: message.sid,
-        status: message.status,
+        sid: result.messageId,
+        status: 'sent',
       },
       message: 'Mensaje enviado exitosamente',
     });

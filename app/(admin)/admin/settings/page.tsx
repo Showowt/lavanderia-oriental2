@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { LocationForm, ServiceForm, KnowledgeBaseForm } from '@/components/settings';
 import { formatCurrency } from '@/lib/utils';
-import type { Location, ServiceCategory, Service, KnowledgeBase } from '@/types';
+import type { Location, ServiceCategory, Service, KnowledgeBase, ServiceCatalog, ServiceCategoryWithServices } from '@/types';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [categories, setCategories] = useState<ServiceCategoryWithServices[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [knowledge, setKnowledge] = useState<KnowledgeBase[]>([]);
 
@@ -24,16 +24,20 @@ export default function AdminSettingsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [locRes, catRes, srvRes, kbRes] = await Promise.all([
+      const [locRes, srvRes, kbRes] = await Promise.all([
         fetch('/api/locations'),
-        fetch('/api/service-categories'),
         fetch('/api/services'),
         fetch('/api/knowledge-base'),
       ]);
 
       if (locRes.ok) setLocations(await locRes.json());
-      if (catRes.ok) setCategories(await catRes.json());
-      if (srvRes.ok) setServices(await srvRes.json());
+      if (srvRes.ok) {
+        const catalog: ServiceCatalog = await srvRes.json();
+        // Extract categories and services from catalog
+        setCategories(catalog.categories || []);
+        const allServices = catalog.categories?.flatMap(c => c.services) || [];
+        setServices(allServices);
+      }
       if (kbRes.ok) setKnowledge(await kbRes.json());
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -63,10 +67,19 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const servicesByCategory = categories.map((cat) => ({
-    ...cat,
-    services: services.filter((s) => s.category_id === cat.id),
-  }));
+  // Get display price for service
+  const getServicePrice = (service: Service): string => {
+    if (service.price_lavado_secado) {
+      return formatCurrency(service.price_lavado_secado);
+    }
+    if (service.price_solo_lavado) {
+      return formatCurrency(service.price_solo_lavado);
+    }
+    if (service.price_solo_secado) {
+      return formatCurrency(service.price_solo_secado);
+    }
+    return '$0.00';
+  };
 
   const knowledgeByCategory = knowledge.reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
@@ -109,11 +122,17 @@ export default function AdminSettingsPage() {
                         <p className="text-sm font-medium text-gray-900">{location.name}</p>
                         <p className="text-xs text-gray-500">{location.address}</p>
                         {location.phone && <p className="text-xs text-gray-500">{location.phone}</p>}
+                        <p className="text-xs text-gray-400 mt-1">
+                          L-V: {location.hours_weekday} | S: {location.hours_saturday} | D: {location.hours_sunday}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={location.is_active ? 'success' : 'default'}>
-                          {location.is_active ? 'Activa' : 'Inactiva'}
+                        <Badge variant={location.status === 'active' ? 'success' : location.status === 'coming_soon' ? 'warning' : 'default'}>
+                          {location.status === 'active' ? 'Activa' : location.status === 'coming_soon' ? 'Próximamente' : 'Inactiva'}
                         </Badge>
+                        {location.delivery_available && (
+                          <Badge variant="info">Delivery</Badge>
+                        )}
                         <button onClick={() => setLocationModal({ open: true, item: location })} className="text-gray-400 hover:text-gray-600">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -141,21 +160,29 @@ export default function AdminSettingsPage() {
             actions={<Button size="sm" onClick={() => setServiceModal({ open: true })}>+ Agregar</Button>}
           />
           <CardContent noPadding>
-            {servicesByCategory.length === 0 ? (
+            {categories.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-6">Sin servicios configurados</p>
             ) : (
               <div className="divide-y divide-gray-200">
-                {servicesByCategory.map((category) => (
+                {categories.map((category) => (
                   <div key={category.id} className="px-6 py-4">
-                    <p className="text-sm font-medium text-gray-900 mb-2">{category.name}</p>
+                    <p className="text-sm font-medium text-gray-900 mb-2">
+                      {category.icon && <span className="mr-2">{category.icon}</span>}
+                      {category.name}
+                    </p>
                     <div className="space-y-2">
-                      {category.services.map((service) => (
+                      {category.services?.map((service: Service) => (
                         <div key={service.id} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
                           <div className="flex-1">
                             <span className="text-gray-700">{service.name}</span>
-                            <span className="text-gray-400 ml-2">{formatCurrency(service.price)}/{service.unit}</span>
+                            <span className="text-gray-400 ml-2">
+                              {getServicePrice(service)}/{service.price_unit}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Badge variant={service.active ? 'success' : 'default'}>
+                              {service.active ? 'Activo' : 'Inactivo'}
+                            </Badge>
                             <button onClick={() => setServiceModal({ open: true, item: service })} className="text-gray-400 hover:text-gray-600">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -169,7 +196,9 @@ export default function AdminSettingsPage() {
                           </div>
                         </div>
                       ))}
-                      {category.services.length === 0 && <p className="text-xs text-gray-400">Sin servicios</p>}
+                      {(!category.services || category.services.length === 0) && (
+                        <p className="text-xs text-gray-400">Sin servicios</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -201,7 +230,9 @@ export default function AdminSettingsPage() {
                               <p className="text-sm font-medium text-gray-900">{item.question}</p>
                               <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{item.answer}</p>
                               <div className="flex items-center gap-2 mt-2">
-                                <Badge variant={item.is_active ? 'success' : 'default'}>{item.is_active ? 'Activo' : 'Inactivo'}</Badge>
+                                <Badge variant={item.active ? 'success' : 'default'}>
+                                  {item.active ? 'Activo' : 'Inactivo'}
+                                </Badge>
                                 <Badge variant="info">{item.language === 'es' ? 'Español' : 'English'}</Badge>
                               </div>
                             </div>

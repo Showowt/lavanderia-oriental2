@@ -3,10 +3,12 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { generateAIResponse } from '@/lib/ai-engine';
 import twilio from 'twilio';
 
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+// GET handler for Twilio webhook verification
+export async function GET(request: NextRequest) {
+  // Twilio doesn't actually need verification like Facebook does,
+  // but we return success to confirm the endpoint is working
+  return NextResponse.json({ status: 'ok', message: 'WhatsApp webhook is active' });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +16,8 @@ export async function POST(request: NextRequest) {
     const from = body.get('From') as string;
     const messageBody = body.get('Body') as string;
     const messageId = body.get('MessageSid') as string;
+
+    console.log('WhatsApp webhook received:', { from, messageBody: messageBody?.substring(0, 50) });
 
     if (!from || !messageBody) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -31,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (customerError && customerError.code === 'PGRST116') {
       // Customer doesn't exist, create one
-      const { data: newCustomer } = await supabaseAdmin
+      const { data: newCustomer, error: createError } = await supabaseAdmin
         .from('customers')
         .insert({
           phone,
@@ -40,6 +44,10 @@ export async function POST(request: NextRequest) {
         .select()
         .single();
 
+      if (createError) {
+        console.error('Error creating customer:', createError);
+        throw createError;
+      }
       customer = newCustomer;
     }
 
@@ -58,16 +66,22 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!conversation) {
-      const { data: newConversation } = await supabaseAdmin
+      const { data: newConversation, error: convError } = await supabaseAdmin
         .from('conversations')
         .insert({
           customer_id: customer.id,
           channel: 'whatsapp',
+          status: 'active',
           ai_handled: true,
+          message_count: 0,
         })
         .select()
         .single();
 
+      if (convError) {
+        console.error('Error creating conversation:', convError);
+        throw convError;
+      }
       conversation = newConversation;
     }
 
@@ -76,14 +90,17 @@ export async function POST(request: NextRequest) {
       conversation_id: conversation.id,
       direction: 'inbound',
       content: messageBody,
-      whatsapp_message_id: messageId,
+      message_type: 'text',
+      ai_generated: false,
+      external_id: messageId || null,
     });
 
-    // Update message count
+    // Update conversation
     await supabaseAdmin
       .from('conversations')
       .update({
         message_count: (conversation.message_count || 0) + 1,
+        last_message_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', conversation.id);
@@ -101,6 +118,14 @@ export async function POST(request: NextRequest) {
       content: msg.content as string,
     }));
 
+    // Get customer order history
+    const { data: orders } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('customer_id', customer.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
     // Generate AI response
     const { response: aiResponse, shouldEscalate, intent } = await generateAIResponse(
       messageBody,
@@ -108,6 +133,7 @@ export async function POST(request: NextRequest) {
         customerId: customer.id,
         customerName: customer.name,
         conversationHistory,
+        orderHistory: orders || [],
         language: customer.language || 'es',
       }
     );
@@ -117,15 +143,39 @@ export async function POST(request: NextRequest) {
       conversation_id: conversation.id,
       direction: 'outbound',
       content: aiResponse,
+      message_type: 'text',
       ai_generated: true,
     });
 
-    // Send WhatsApp response
-    await twilioClient.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-      to: from,
-      body: aiResponse,
-    });
+    // Update conversation message count
+    await supabaseAdmin
+      .from('conversations')
+      .update({
+        message_count: (conversation.message_count || 0) + 2,
+        last_message_at: new Date().toISOString(),
+      })
+      .eq('id', conversation.id);
+
+    // Send WhatsApp response if Twilio is configured
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
+      try {
+        const twilioClient = twilio(
+          process.env.TWILIO_ACCOUNT_SID,
+          process.env.TWILIO_AUTH_TOKEN
+        );
+
+        await twilioClient.messages.create({
+          from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+          to: from,
+          body: aiResponse,
+        });
+      } catch (twilioError) {
+        console.error('Twilio send error:', twilioError);
+        // Don't throw - we still saved the response
+      }
+    } else {
+      console.log('Twilio not configured - AI response saved but not sent:', aiResponse.substring(0, 100));
+    }
 
     // Handle escalation if needed
     if (shouldEscalate) {

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { orderFilterSchema, createOrderSchema } from '@/lib/validations';
 import { calculatePagination } from '@/lib/utils';
-import type { PaginatedResponse, OrderListItem, OrderItem } from '@/types';
+import { sendOrderNotification } from '@/lib/notifications';
+import type { PaginatedResponse, OrderListItem, OrderItem, Service, Customer } from '@/types';
+
+// Helper to get primary price from service
+function getServicePrice(service: Service): number {
+  return service.price_lavado_secado ?? service.price_solo_lavado ?? service.price_solo_secado ?? 0;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,7 +100,7 @@ export async function POST(request: NextRequest) {
     const serviceIds = data.items.map((item) => item.service_id);
     const { data: services, error: servicesError } = await supabaseAdmin
       .from('services')
-      .select('id, name, price')
+      .select('id, name, price_lavado_secado, price_solo_lavado, price_solo_secado, price_unit')
       .in('id', serviceIds);
 
     if (servicesError) {
@@ -102,23 +108,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate order totals
-    const serviceMap = new Map(services?.map((s) => [s.id, s]));
+    const serviceMap = new Map(services?.map((s) => [s.id, s as Service]));
     const items: OrderItem[] = data.items.map((item) => {
       const service = serviceMap.get(item.service_id);
       if (!service) {
         throw new Error(`Servicio no encontrado: ${item.service_id}`);
       }
+      const unitPrice = getServicePrice(service);
       return {
         service_id: item.service_id,
         service_name: service.name,
         quantity: item.quantity,
-        unit_price: service.price,
-        subtotal: service.price * item.quantity,
+        unit_price: unitPrice,
+        subtotal: unitPrice * item.quantity,
       };
     });
 
     const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-    const tax = subtotal * 0.16; // 16% IVA
+    const tax = subtotal * 0.13; // 13% IVA El Salvador
     const total = subtotal + tax;
 
     // Create order
@@ -144,27 +151,37 @@ export async function POST(request: NextRequest) {
       throw orderError;
     }
 
-    // Update customer stats - fetch current values first
-    try {
-      const { data: customer } = await supabaseAdmin
-        .from('customers')
-        .select('total_orders, total_spent')
-        .eq('id', data.customer_id)
-        .single();
+    // Get customer for notification
+    const { data: customer } = await supabaseAdmin
+      .from('customers')
+      .select('*')
+      .eq('id', data.customer_id)
+      .single();
 
-      await supabaseAdmin
-        .from('customers')
-        .update({
-          total_orders: (customer?.total_orders || 0) + 1,
-          total_spent: (customer?.total_spent || 0) + total,
-          last_order_at: new Date().toISOString(),
-        })
-        .eq('id', data.customer_id);
-    } catch (e) {
-      console.error('Error updating customer stats:', e);
+    // Update customer stats
+    if (customer) {
+      try {
+        await supabaseAdmin
+          .from('customers')
+          .update({
+            total_orders: (customer.total_orders || 0) + 1,
+            total_spent: (customer.total_spent || 0) + total,
+            last_order_at: new Date().toISOString(),
+          })
+          .eq('id', data.customer_id);
+      } catch (e) {
+        console.error('Error updating customer stats:', e);
+      }
+
+      // Send order created notification via WhatsApp
+      try {
+        await sendOrderNotification(order, customer as Customer, 'order_created');
+      } catch (notifError) {
+        console.error('Error sending order notification:', notifError);
+      }
     }
 
-    // Create notification
+    // Create internal notification for dashboard
     await supabaseAdmin.from('notifications').insert({
       type: 'order',
       title: 'Nueva orden',

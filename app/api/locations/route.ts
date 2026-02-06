@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { createLocationSchema } from '@/lib/validations';
 import type { Location } from '@/types';
 
 export async function GET() {
@@ -8,7 +7,7 @@ export async function GET() {
     const { data: locations, error } = await supabaseAdmin
       .from('locations')
       .select('*')
-      .eq('is_active', true)
+      .eq('status', 'active')
       .order('name', { ascending: true });
 
     if (error) {
@@ -28,16 +27,18 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const data = createLocationSchema.parse(body);
 
     const { data: location, error } = await supabaseAdmin
       .from('locations')
       .insert({
-        name: data.name,
-        address: data.address,
-        phone: data.phone || null,
-        hours: data.hours || {},
-        is_active: true,
+        name: body.name,
+        address: body.address,
+        phone: body.phone || '+503 7947 5950',
+        hours_weekday: body.hours_weekday || '7:00 AM - 7:00 PM',
+        hours_saturday: body.hours_saturday || '7:00 AM - 5:00 PM',
+        hours_sunday: body.hours_sunday || '8:00 AM - 2:00 PM',
+        delivery_available: body.delivery_available ?? true,
+        status: 'active',
       })
       .select()
       .single();

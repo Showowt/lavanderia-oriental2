@@ -10,7 +10,7 @@ import type { Service, Location, Customer } from '@/types';
 interface OrderFormData {
   customer_id: string;
   location_id?: string;
-  items: Array<{ service_id: string; quantity: number }>;
+  items: Array<{ service_id: string; quantity: number; price_type?: string }>;
   notes?: string;
 }
 
@@ -21,6 +21,17 @@ interface OrderFormProps {
   onSubmit: (data: OrderFormData) => void;
   onCancel: () => void;
   loading?: boolean;
+}
+
+// Get the primary price for a service
+function getServicePrice(service: Service): number {
+  return service.price_lavado_secado ?? service.price_solo_lavado ?? service.price_solo_secado ?? 0;
+}
+
+// Get price label for service
+function getServicePriceLabel(service: Service): string {
+  const price = getServicePrice(service);
+  return `${service.name} - ${formatCurrency(price)}/${service.price_unit}`;
 }
 
 export function OrderForm({
@@ -44,9 +55,10 @@ export function OrderForm({
   useEffect(() => {
     const subtotal = selectedItems.reduce((sum, item) => {
       const service = services.find((s) => s.id === item.service_id);
-      return sum + (service?.price || 0) * item.quantity;
+      const price = service ? getServicePrice(service) : 0;
+      return sum + price * item.quantity;
     }, 0);
-    const tax = subtotal * 0.16;
+    const tax = subtotal * 0.13; // IVA El Salvador
     setTotal(subtotal + tax);
   }, [selectedItems, services]);
 
@@ -85,6 +97,9 @@ export function OrderForm({
     });
   };
 
+  // Filter active locations
+  const activeLocations = locations.filter(l => l.status === 'active');
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Customer Selection */}
@@ -104,7 +119,7 @@ export function OrderForm({
         label="Ubicación"
         value={locationId}
         onChange={(e) => setLocationId(e.target.value)}
-        options={locations.map((l) => ({
+        options={activeLocations.map((l) => ({
           value: l.id,
           label: l.name,
         }))}
@@ -121,9 +136,9 @@ export function OrderForm({
             <Select
               value={item.service_id}
               onChange={(e) => updateItem(index, 'service_id', e.target.value)}
-              options={services.map((s) => ({
+              options={services.filter(s => s.active).map((s) => ({
                 value: s.id,
-                label: `${s.name} - ${formatCurrency(s.price)}/${s.unit}`,
+                label: getServicePriceLabel(s),
               }))}
               placeholder="Seleccionar servicio"
               className="flex-1"
@@ -174,7 +189,7 @@ export function OrderForm({
 
       {/* Total */}
       <div className="flex justify-between items-center py-4 border-t border-gray-200">
-        <span className="text-lg font-medium text-gray-900">Total:</span>
+        <span className="text-lg font-medium text-gray-900">Total (inc. IVA):</span>
         <span className="text-2xl font-bold text-blue-600">
           {formatCurrency(total)}
         </span>

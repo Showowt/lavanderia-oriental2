@@ -174,13 +174,13 @@ export interface UpdateCustomerRequest {
 }
 
 // Service catalog types
-export interface ServiceWithCategory extends Service {
+export interface ServiceWithCategoryDetails extends Omit<Service, 'category'> {
   category: ServiceCategory;
+  categoryName: string;
 }
 
-export interface ServiceCatalog {
-  categories: Array<ServiceCategory & { services: Service[] }>;
-}
+// Re-export from database types
+export type { ServiceCatalog, ServiceCategoryWithServices } from './database';
 
 // Analytics report types
 export interface ReportFilters {

@@ -41,103 +41,19 @@ export async function middleware(req: NextRequest) {
   const publicRoutes = ['/login', '/auth', '/api/whatsapp/webhook'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
-  // Admin-only routes
-  const adminRoutes = ['/admin'];
-  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
-
-  // Employee routes (employees can access)
-  const employeeRoutes = ['/employee'];
-  const isEmployeeRoute = employeeRoutes.some(route => pathname.startsWith(route));
-
-  // Legacy dashboard routes - redirect to role-based dashboard
-  const legacyRoutes = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings'];
-  const isLegacyRoute = legacyRoutes.some(route => pathname.startsWith(route));
+  // Protected routes that require authentication
+  const protectedRoutes = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings'];
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   // If not authenticated and trying to access protected route
-  if (!session && (isAdminRoute || isEmployeeRoute || isLegacyRoute)) {
+  if (!session && isProtectedRoute) {
     const redirectUrl = new URL('/login', req.url);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If authenticated
-  if (session) {
-    // Redirect from login to appropriate dashboard
-    if (pathname === '/login') {
-      // Try to get user role from employees table
-      const { data: employee, error } = await supabase
-        .from('employees')
-        .select('role')
-        .eq('auth_id', session.user.id)
-        .single();
-
-      // If table doesn't exist (PGRST205), redirect to admin dashboard
-      if (error?.code === 'PGRST205') {
-        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
-      }
-
-      // If no record found, let login page handle it
-      if (error) {
-        return res;
-      }
-
-      if (employee?.role === 'admin') {
-        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
-      } else if (employee) {
-        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
-      }
-    }
-
-    // Handle legacy routes - redirect to role-based routes
-    if (isLegacyRoute) {
-      const { data: employee, error } = await supabase
-        .from('employees')
-        .select('role')
-        .eq('auth_id', session.user.id)
-        .single();
-
-      // If table doesn't exist or error, redirect to admin by default
-      if (error) {
-        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
-      }
-
-      if (employee?.role === 'admin') {
-        // Map legacy routes to admin routes
-        const newPath = pathname.replace(/^\/(dashboard|conversations|orders|escalations|customers|settings)/, '/admin$&');
-        return NextResponse.redirect(new URL(newPath, req.url));
-      } else if (employee) {
-        // Employees go to their limited dashboard
-        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
-      }
-    }
-
-    // Check admin route access - allow if table doesn't exist
-    if (isAdminRoute) {
-      const { data: employee, error } = await supabase
-        .from('employees')
-        .select('role')
-        .eq('auth_id', session.user.id)
-        .single();
-
-      // If table doesn't exist (PGRST205), allow access (first-time setup mode)
-      if (error?.code === 'PGRST205') {
-        return res;
-      }
-
-      // If no record but table exists, allow for first-time setup
-      if (error?.code === 'PGRST116') {
-        return res;
-      }
-
-      // If some other error, allow access to prevent lockout
-      if (error) {
-        return res;
-      }
-
-      if (employee?.role !== 'admin') {
-        // Not an admin, redirect to employee dashboard
-        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
-      }
-    }
+  // If authenticated and on login page, redirect to dashboard
+  if (session && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return res;
