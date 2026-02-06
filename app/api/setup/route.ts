@@ -1,8 +1,64 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+// POST: Create admin user
+export async function POST(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ error: 'Missing environment variables' }, { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  try {
+    const body = await request.json();
+    const email = body.email || 'admin@lavanderiaoriental.com';
+    const password = body.password || 'LavanderiaAdmin2024!';
+
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Auto-confirm email
+    });
+
+    if (authError) {
+      // If user already exists, return success
+      if (authError.message.includes('already been registered')) {
+        return NextResponse.json({
+          success: true,
+          message: 'User already exists',
+          email,
+          note: 'Use this email and your password to login'
+        });
+      }
+      throw authError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Admin user created successfully',
+      email,
+      password: password,
+      userId: authData.user?.id,
+      note: 'Save these credentials! You can now login at /login'
+    });
+
+  } catch (error) {
+    console.error('Setup error:', error);
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Failed to create user'
+    }, { status: 500 });
+  }
+}
+
+// GET: Check setup status
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
