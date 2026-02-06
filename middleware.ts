@@ -63,14 +63,19 @@ export async function middleware(req: NextRequest) {
   if (session) {
     // Redirect from login to appropriate dashboard
     if (pathname === '/login') {
-      // Get user role from employees table
+      // Try to get user role from employees table
       const { data: employee, error } = await supabase
         .from('employees')
         .select('role')
         .eq('auth_id', session.user.id)
         .single();
 
-      // If table doesn't exist or no record, let login page handle it
+      // If table doesn't exist (PGRST205), redirect to admin dashboard
+      if (error?.code === 'PGRST205') {
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+      }
+
+      // If no record found, let login page handle it
       if (error) {
         return res;
       }
@@ -90,7 +95,7 @@ export async function middleware(req: NextRequest) {
         .eq('auth_id', session.user.id)
         .single();
 
-      // If error, redirect to admin by default for first-time setup
+      // If table doesn't exist or error, redirect to admin by default
       if (error) {
         return NextResponse.redirect(new URL('/admin/dashboard', req.url));
       }
@@ -105,7 +110,7 @@ export async function middleware(req: NextRequest) {
       }
     }
 
-    // Check admin route access
+    // Check admin route access - allow if table doesn't exist
     if (isAdminRoute) {
       const { data: employee, error } = await supabase
         .from('employees')
@@ -113,7 +118,17 @@ export async function middleware(req: NextRequest) {
         .eq('auth_id', session.user.id)
         .single();
 
-      // If error (table doesn't exist or no record), allow access for first-time setup
+      // If table doesn't exist (PGRST205), allow access (first-time setup mode)
+      if (error?.code === 'PGRST205') {
+        return res;
+      }
+
+      // If no record but table exists, allow for first-time setup
+      if (error?.code === 'PGRST116') {
+        return res;
+      }
+
+      // If some other error, allow access to prevent lockout
       if (error) {
         return res;
       }

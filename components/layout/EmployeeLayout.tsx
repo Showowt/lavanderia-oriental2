@@ -56,17 +56,21 @@ export function EmployeeLayout({ children }: EmployeeLayoutProps) {
       setUser(user);
 
       if (user) {
-        const { data: employee } = await supabase
-          .from('employees')
-          .select('name, location:locations(name)')
-          .eq('auth_id', user.id)
-          .single();
+        try {
+          const { data: employee } = await supabase
+            .from('employees')
+            .select('name, location:locations(name)')
+            .eq('auth_id', user.id)
+            .single();
 
-        if (employee) {
-          setEmployeeName(employee.name);
-          if (employee.location && typeof employee.location === 'object' && 'name' in employee.location) {
-            setLocationName((employee.location as { name: string }).name);
+          if (employee) {
+            setEmployeeName(employee.name);
+            if (employee.location && typeof employee.location === 'object' && 'name' in employee.location) {
+              setLocationName((employee.location as { name: string }).name);
+            }
           }
+        } catch {
+          // Employees table might not exist yet - ignore error
         }
       }
     };

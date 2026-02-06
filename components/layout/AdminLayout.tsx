@@ -93,14 +93,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       setUser(user);
 
       if (user) {
-        const { data: employee } = await supabase
-          .from('employees')
-          .select('name')
-          .eq('auth_id', user.id)
-          .single();
+        try {
+          const { data: employee } = await supabase
+            .from('employees')
+            .select('name')
+            .eq('auth_id', user.id)
+            .single();
 
-        if (employee) {
-          setEmployeeName(employee.name);
+          if (employee) {
+            setEmployeeName(employee.name);
+          }
+        } catch {
+          // Employees table might not exist yet - ignore error
         }
       }
     };

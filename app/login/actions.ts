@@ -48,49 +48,51 @@ export async function login(formData: FormData) {
     return { error: 'No se pudo iniciar sesión' };
   }
 
-  // Check if employees table exists and if user is in it
+  // Try to check employees table - if it doesn't exist, skip role check
   const { data: employee, error: employeeError } = await supabaseAdmin
     .from('employees')
     .select('*')
     .eq('auth_id', authData.user.id)
     .single();
 
-  // If table doesn't exist (PGRST205) or no employees yet, auto-setup first admin
-  if (employeeError) {
-    if (employeeError.code === 'PGRST205' || employeeError.code === 'PGRST116') {
-      // Table doesn't exist or no rows - first user becomes admin
-      // Create employees table via RPC or just insert (table should exist)
-      const { error: insertError } = await supabaseAdmin
-        .from('employees')
-        .insert({
-          auth_id: authData.user.id,
-          email: authData.user.email,
-          name: authData.user.email?.split('@')[0] || 'Admin',
-          role: 'admin',
-          is_active: true,
-        });
-
-      if (insertError) {
-        // Table truly doesn't exist - need to create it first
-        if (insertError.code === 'PGRST205' || insertError.code === '42P01') {
-          await supabase.auth.signOut();
-          return {
-            error: 'Base de datos no configurada. Ejecuta el SQL de setup en Supabase.'
-          };
-        }
-        await supabase.auth.signOut();
-        return { error: `Error de configuración: ${insertError.message}` };
-      }
-
-      // Successfully created first admin - redirect to dashboard
-      redirect('/admin/dashboard');
-    } else {
-      // Other error - user not in employees table
-      await supabase.auth.signOut();
-      return { error: 'No tienes acceso al sistema. Contacta al administrador.' };
-    }
+  // If employees table doesn't exist (PGRST205), just let user in as admin
+  if (employeeError && employeeError.code === 'PGRST205') {
+    // Table doesn't exist - bypass role check, go straight to admin dashboard
+    redirect('/admin/dashboard');
   }
 
+  // If table exists but user not found (PGRST116 = no rows)
+  if (employeeError && employeeError.code === 'PGRST116') {
+    // No matching employee - but if it's the first login, allow as admin
+    // Check if there are ANY employees
+    const { count } = await supabaseAdmin
+      .from('employees')
+      .select('*', { count: 'exact', head: true });
+
+    if (count === 0) {
+      // No employees at all - first user becomes admin
+      await supabaseAdmin.from('employees').insert({
+        auth_id: authData.user.id,
+        email: authData.user.email,
+        name: authData.user.email?.split('@')[0] || 'Admin',
+        role: 'admin',
+        is_active: true,
+      });
+      redirect('/admin/dashboard');
+    }
+
+    // Table exists and has employees, but this user isn't one
+    await supabase.auth.signOut();
+    return { error: 'No tienes acceso al sistema. Contacta al administrador.' };
+  }
+
+  // Some other error
+  if (employeeError) {
+    await supabase.auth.signOut();
+    return { error: 'Error verificando acceso. Intenta de nuevo.' };
+  }
+
+  // Employee found - check if active
   if (!employee.is_active) {
     await supabase.auth.signOut();
     return { error: 'Tu cuenta está desactivada. Contacta al administrador.' };
