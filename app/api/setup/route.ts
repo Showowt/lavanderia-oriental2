@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
-// POST: Create admin user
+// POST: Create or reset admin user
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -19,23 +19,67 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const email = body.email || 'admin@lavanderiaoriental.com';
-    const password = body.password || 'LavanderiaAdmin2024!';
+    const password = body.password || 'LavanderiaAdmin2024';
+    const reset = body.reset === true;
+
+    // If reset requested, find and update existing user
+    if (reset) {
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const existingUser = users?.users?.find(u => u.email === email);
+
+      if (existingUser) {
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          existingUser.id,
+          { password }
+        );
+
+        if (updateError) throw updateError;
+
+        return NextResponse.json({
+          success: true,
+          message: 'Password reset successfully',
+          email,
+          password,
+          note: 'Use these credentials to login at /login'
+        });
+      }
+    }
 
     // Create user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email
+      email_confirm: true,
     });
 
     if (authError) {
-      // If user already exists, return success
       if (authError.message.includes('already been registered')) {
+        // User exists, try to reset password
+        const { data: users } = await supabase.auth.admin.listUsers();
+        const existingUser = users?.users?.find(u => u.email === email);
+
+        if (existingUser) {
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            existingUser.id,
+            { password }
+          );
+
+          if (updateError) throw updateError;
+
+          return NextResponse.json({
+            success: true,
+            message: 'Password updated for existing user',
+            email,
+            password,
+            note: 'Use these credentials to login at /login'
+          });
+        }
+
         return NextResponse.json({
           success: true,
           message: 'User already exists',
           email,
-          note: 'Use this email and your password to login'
+          note: 'Use this email and your existing password to login, or add reset:true to reset password'
         });
       }
       throw authError;
@@ -45,7 +89,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Admin user created successfully',
       email,
-      password: password,
+      password,
       userId: authData.user?.id,
       note: 'Save these credentials! You can now login at /login'
     });
