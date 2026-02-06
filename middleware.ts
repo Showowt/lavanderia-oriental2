@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Skip middleware for these paths
+  // Skip middleware for these paths - always allow through
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/whatsapp') ||
@@ -25,6 +25,11 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Login page - always allow, no redirect
+  if (pathname === '/login') {
+    return response;
+  }
+
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +40,7 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value)
             );
             response = NextResponse.next({
@@ -51,17 +56,15 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // IMPORTANT: getUser() is more reliable than getSession() for middleware
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Get user from Supabase
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Login page - always allow access, let client handle redirect
-    if (pathname === '/login') {
-      return response;
-    }
+    // Also check for our custom auth cookies as backup
+    const hasAccessToken = request.cookies.has('sb-access-token');
 
     // Home page - redirect based on auth status
     if (pathname === '/') {
-      if (user) {
+      if (user || hasAccessToken) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       return NextResponse.redirect(new URL('/login', request.url));
@@ -81,32 +84,22 @@ export async function middleware(request: NextRequest) {
 
     const isProtectedRoute = protectedPaths.some(path => pathname.startsWith(path));
 
-    if (isProtectedRoute && !user) {
-      const redirectUrl = new URL('/login', request.url);
-      return NextResponse.redirect(redirectUrl);
+    // If protected route and not authenticated, redirect to login
+    if (isProtectedRoute && !user && !hasAccessToken) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
     return response;
   } catch (e) {
     console.error('Middleware error:', e);
-    // On error, redirect to login for protected routes
-    const protectedPaths = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings', '/admin', '/employee'];
-    if (protectedPaths.some(path => pathname.startsWith(path))) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+    // On error, allow through to avoid breaking the app
+    // Protected pages will handle their own auth
     return response;
   }
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

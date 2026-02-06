@@ -1,36 +1,52 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase-browser';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const supabase = createClient();
+    try {
+      // Use server-side API for reliable cookie setting
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+        credentials: 'include', // Important for cookies
+      });
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password,
-    });
+      const data = await response.json();
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
+      if (!response.ok || !data.success) {
+        setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
 
-    if (data.session) {
-      window.location.href = '/dashboard';
-    } else {
-      setError('Login failed');
+      // Success - redirect to dashboard
+      // Use router.push first, then fallback to window.location
+      router.push('/dashboard');
+
+      // Backup redirect after a short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
+
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
       setLoading(false);
     }
   }
@@ -46,8 +62,8 @@ export default function LoginPage() {
                 <circle cx="12" cy="12" r="4" strokeWidth="2" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Lavandería Oriental</h1>
-            <p className="text-gray-500 mt-1">Panel de Administración</p>
+            <h1 className="text-2xl font-bold text-gray-900">Lavanderia Oriental</h1>
+            <p className="text-gray-500 mt-1">Panel de Administracion</p>
           </div>
 
           {error && (
@@ -59,7 +75,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Correo electrónico
+                Correo electronico
               </label>
               <input
                 type="email"
@@ -69,21 +85,23 @@ export default function LoginPage() {
                 placeholder="admin@lavanderiaoriental.com"
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña
+                Contrasena
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="••••••••"
+                placeholder="********"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
 
@@ -92,7 +110,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold rounded-xl transition-all shadow-md"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? 'Iniciando sesion...' : 'Iniciar Sesion'}
             </button>
           </form>
         </div>
