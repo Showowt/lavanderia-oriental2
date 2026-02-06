@@ -32,44 +32,83 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Refresh session if exists
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const pathname = req.nextUrl.pathname;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/api/whatsapp/webhook'];
-  const isPublicRoute = publicRoutes.some(route => req.nextUrl.pathname.startsWith(route));
+  const publicRoutes = ['/login', '/auth', '/api/whatsapp/webhook'];
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
-  // Protected routes that require authentication
-  const protectedRoutes = [
-    '/dashboard',
-    '/conversations',
-    '/orders',
-    '/escalations',
-    '/customers',
-    '/settings',
-    '/api/conversations',
-    '/api/orders',
-    '/api/escalations',
-    '/api/customers',
-    '/api/analytics',
-    '/api/locations',
-    '/api/services',
-    '/api/service-categories',
-    '/api/knowledge-base',
-  ];
-  const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route));
+  // Admin-only routes
+  const adminRoutes = ['/admin'];
+  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+
+  // Employee routes (employees can access)
+  const employeeRoutes = ['/employee'];
+  const isEmployeeRoute = employeeRoutes.some(route => pathname.startsWith(route));
+
+  // Legacy dashboard routes - redirect to role-based dashboard
+  const legacyRoutes = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings'];
+  const isLegacyRoute = legacyRoutes.some(route => pathname.startsWith(route));
 
   // If not authenticated and trying to access protected route
-  if (!session && isProtectedRoute) {
+  if (!session && (isAdminRoute || isEmployeeRoute || isLegacyRoute)) {
     const redirectUrl = new URL('/login', req.url);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If authenticated and trying to access login page
-  if (session && req.nextUrl.pathname === '/login') {
-    const redirectUrl = new URL('/dashboard', req.url);
-    return NextResponse.redirect(redirectUrl);
+  // If authenticated
+  if (session) {
+    // Redirect from login to appropriate dashboard
+    if (pathname === '/login') {
+      // Get user role from employees table
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('role')
+        .eq('auth_id', session.user.id)
+        .single();
+
+      if (employee?.role === 'admin') {
+        return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+      } else if (employee) {
+        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
+      }
+      // If no employee record, let them stay on login (will show error)
+    }
+
+    // Handle legacy routes - redirect to role-based routes
+    if (isLegacyRoute) {
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('role')
+        .eq('auth_id', session.user.id)
+        .single();
+
+      if (employee?.role === 'admin') {
+        // Map legacy routes to admin routes
+        const newPath = pathname.replace(/^\/(dashboard|conversations|orders|escalations|customers|settings)/, '/admin$&');
+        return NextResponse.redirect(new URL(newPath, req.url));
+      } else if (employee) {
+        // Employees go to their limited dashboard
+        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
+      }
+    }
+
+    // Check admin route access
+    if (isAdminRoute) {
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('role')
+        .eq('auth_id', session.user.id)
+        .single();
+
+      if (employee?.role !== 'admin') {
+        // Not an admin, redirect to employee dashboard
+        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
+      }
+    }
   }
 
   return res;
@@ -77,13 +116,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,16 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DESIGN SYSTEM - LAVANDERÍA ORIENTAL
-   Brand Colors: Teal (Clean/Fresh) + Amber (Warmth/Action)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Brand Colors */
   --brand-50: #f0fdfa;
   --brand-100: #ccfbf1;
   --brand-200: #99f6e4;
@@ -22,42 +18,26 @@
   --brand-800: #115e59;
   --brand-900: #134e4a;
 
-  /* Accent Colors */
   --accent-50: #fffbeb;
   --accent-100: #fef3c7;
   --accent-500: #f59e0b;
   --accent-600: #d97706;
 
-  /* Semantic Colors */
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #ef4444;
   --info: #3b82f6;
 
-  /* Surfaces */
   --background: #f8fafc;
   --surface: #ffffff;
   --surface-hover: #f1f5f9;
   --border: #e2e8f0;
   --border-hover: #cbd5e1;
 
-  /* Text */
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-tertiary: #94a3b8;
   --text-inverse: #ffffff;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-
-  /* Transitions */
-  --transition-fast: 150ms;
-  --transition-base: 200ms;
-  --transition-slow: 300ms;
-  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -94,14 +74,12 @@ body {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
-  transition: background var(--transition-fast) var(--ease-out);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-hover);
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) var(--background);
@@ -134,173 +112,236 @@ body {
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    UTILITY CLASSES
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@layer utilities {
-  /* Text gradient */
-  .text-gradient {
-    @apply bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent;
-  }
+.text-gradient {
+  background: linear-gradient(to right, #0d9488, #14b8a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
-  /* Glass effect */
-  .glass {
-    @apply bg-white/80 backdrop-blur-lg;
-  }
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+}
 
-  /* Card hover lift */
-  .hover-lift {
-    @apply transition-all duration-200 ease-out;
-  }
+.hover-lift {
+  transition: all 0.2s ease-out;
+}
 
-  .hover-lift:hover {
-    @apply -translate-y-0.5 shadow-medium;
-  }
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+}
 
-  /* Subtle border glow on focus */
-  .focus-glow:focus-within {
-    @apply ring-2 ring-brand-500/20;
-  }
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+}
 
-  /* Status indicators */
-  .status-dot {
-    @apply w-2 h-2 rounded-full;
-  }
+.status-dot-active {
+  background-color: #22c55e;
+  animation: pulse 2s infinite;
+}
 
-  .status-dot-active {
-    @apply bg-success-500 animate-pulse;
-  }
+.status-dot-warning {
+  background-color: #f59e0b;
+}
 
-  .status-dot-warning {
-    @apply bg-warning-500;
-  }
+.status-dot-error {
+  background-color: #ef4444;
+}
 
-  .status-dot-error {
-    @apply bg-error-500;
-  }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
-  /* Hide scrollbar but keep functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   COMPONENT OVERRIDES
+   COMPONENT STYLES
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@layer components {
-  /* Input base styles */
-  .input-base {
-    @apply w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl
-           text-slate-900 text-sm placeholder:text-slate-400
-           transition-all duration-200 ease-out
-           hover:border-slate-300
-           focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 focus:outline-none;
-  }
+.input-base {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  transition: all 0.2s ease-out;
+}
 
-  .input-error {
-    @apply border-error-500 focus:border-error-500 focus:ring-error-500/10;
-  }
+.input-base::placeholder {
+  color: #94a3b8;
+}
 
-  /* Button base styles */
-  .btn {
-    @apply inline-flex items-center justify-center font-medium rounded-xl
-           transition-all duration-200 ease-out
-           focus:outline-none focus:ring-4 focus:ring-offset-0
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none;
-  }
+.input-base:hover {
+  border-color: #cbd5e1;
+}
 
-  .btn-primary {
-    @apply bg-brand-600 text-white
-           hover:bg-brand-700 hover:-translate-y-0.5 hover:shadow-md
-           focus:ring-brand-500/30
-           active:translate-y-0 active:shadow-sm;
-  }
+.input-base:focus {
+  border-color: #14b8a6;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+}
 
-  .btn-secondary {
-    @apply bg-slate-100 text-slate-700
-           hover:bg-slate-200 hover:-translate-y-0.5
-           focus:ring-slate-500/20
-           active:translate-y-0;
-  }
+.input-error {
+  border-color: #ef4444;
+}
 
-  .btn-ghost {
-    @apply text-slate-600
-           hover:bg-slate-100 hover:text-slate-900
-           focus:ring-slate-500/20;
-  }
+.input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
 
-  .btn-danger {
-    @apply bg-error-600 text-white
-           hover:bg-error-700 hover:-translate-y-0.5 hover:shadow-md
-           focus:ring-error-500/30
-           active:translate-y-0;
-  }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-out;
+}
 
-  .btn-accent {
-    @apply bg-accent-500 text-white
-           hover:bg-accent-600 hover:-translate-y-0.5 hover:shadow-md
-           focus:ring-accent-500/30
-           active:translate-y-0;
-  }
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.3);
+}
 
-  /* Card styles */
-  .card {
-    @apply bg-white rounded-2xl border border-slate-200/60 shadow-soft
-           transition-all duration-200 ease-out;
-  }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-  .card-hover {
-    @apply hover:border-slate-300 hover:shadow-medium hover:-translate-y-0.5;
-  }
+.btn-primary {
+  background-color: #0d9488;
+  color: white;
+}
 
-  .card-interactive {
-    @apply cursor-pointer hover:border-brand-200 hover:shadow-md;
-  }
+.btn-primary:hover {
+  background-color: #0f766e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
-  /* Badge styles */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
+.btn-primary:active {
+  transform: translateY(0);
+}
 
-  .badge-brand {
-    @apply bg-brand-100 text-brand-700;
-  }
+.btn-secondary {
+  background-color: #f1f5f9;
+  color: #334155;
+}
 
-  .badge-success {
-    @apply bg-success-100 text-success-700;
-  }
+.btn-secondary:hover {
+  background-color: #e2e8f0;
+  transform: translateY(-2px);
+}
 
-  .badge-warning {
-    @apply bg-warning-100 text-warning-700;
-  }
+.btn-ghost {
+  color: #475569;
+}
 
-  .badge-error {
-    @apply bg-error-100 text-error-700;
-  }
+.btn-ghost:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
 
-  .badge-info {
-    @apply bg-blue-100 text-blue-700;
-  }
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
 
-  .badge-neutral {
-    @apply bg-slate-100 text-slate-600;
-  }
+.btn-danger:hover {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-accent {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.btn-accent:hover {
+  background-color: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  background-color: white;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-out;
+}
+
+.card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  border-color: #99f6e4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-brand {
+  background-color: #ccfbf1;
+  color: #0f766e;
+}
+
+.badge-success {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.badge-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge-info {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-neutral {
+  background-color: #f1f5f9;
+  color: #475569;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -308,12 +349,8 @@ body {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes fade-in-up {
@@ -361,12 +398,8 @@ body {
 }
 
 @keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-fade-in {
@@ -404,7 +437,6 @@ body {
    SIGNATURE EXPERIENCE ANIMATIONS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Sparkle animation */
 @keyframes sparkle {
   0% {
     opacity: 0;
@@ -424,21 +456,15 @@ body {
   animation: sparkle 1s ease-out forwards;
 }
 
-/* Wave text animation */
 @keyframes wave {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .animate-wave {
   animation: wave 1.5s ease-in-out infinite;
 }
 
-/* Float animation */
 @keyframes float {
   0%, 100% {
     transform: translateY(0) rotate(0deg);
@@ -455,7 +481,6 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
-/* Glow pulse */
 @keyframes glow-pulse {
   0%, 100% {
     box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
@@ -469,7 +494,6 @@ body {
   animation: glow-pulse 3s ease-in-out infinite;
 }
 
-/* Fresh breeze - subtle left-right movement */
 @keyframes fresh-breeze {
   0%, 100% {
     transform: translateX(0) skewX(0deg);
@@ -486,37 +510,21 @@ body {
   animation: fresh-breeze 4s ease-in-out infinite;
 }
 
-/* Washing machine spin */
 @keyframes wash-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(90deg);
-  }
-  50% {
-    transform: rotate(180deg);
-  }
-  75% {
-    transform: rotate(270deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .animate-wash-spin {
   animation: wash-spin 2s ease-in-out infinite;
 }
 
-/* Fabric fold effect */
 @keyframes fabric-fold {
-  0% {
-    transform: perspective(500px) rotateX(0deg);
-  }
-  100% {
-    transform: perspective(500px) rotateX(-5deg);
-  }
+  0% { transform: perspective(500px) rotateX(0deg); }
+  100% { transform: perspective(500px) rotateX(-5deg); }
 }
 
 .hover-fabric-fold:hover {
@@ -524,15 +532,12 @@ body {
   transform-origin: top center;
 }
 
-/* Bubble pop */
 @keyframes bubble-pop {
   0% {
     transform: scale(1);
     opacity: 1;
   }
-  50% {
-    transform: scale(1.2);
-  }
+  50% { transform: scale(1.2); }
   100% {
     transform: scale(0);
     opacity: 0;
@@ -543,7 +548,6 @@ body {
   animation: bubble-pop 0.3s ease-out forwards;
 }
 
-/* Water ripple effect on click */
 .ripple-effect {
   position: relative;
   overflow: hidden;
@@ -577,29 +581,21 @@ body {
   }
 }
 
-/* Signature text reveal */
 @keyframes text-reveal {
-  0% {
-    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
-  }
-  100% {
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  }
+  0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
 }
 
 .animate-text-reveal {
   animation: text-reveal 0.8s ease-out forwards;
 }
 
-/* Laundry-specific: Steam effect */
 @keyframes steam {
   0% {
     opacity: 0;
     transform: translateY(0) scale(1);
   }
-  50% {
-    opacity: 0.5;
-  }
+  50% { opacity: 0.5; }
   100% {
     opacity: 0;
     transform: translateY(-20px) scale(1.5);
@@ -608,6 +604,23 @@ body {
 
 .animate-steam {
   animation: steam 2s ease-out infinite;
+}
+
+/* Shadow utilities */
+.shadow-soft {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-medium {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-strong {
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.12), 0 16px 40px -8px rgba(0, 0, 0, 0.16);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

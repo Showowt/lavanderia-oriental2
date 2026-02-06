@@ -169,3 +169,23 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+// Employee / User types
+export type EmployeeRole = 'admin' | 'employee';
+
+export interface Employee {
+  id: string;
+  auth_id: string;
+  email: string;
+  name: string;
+  role: EmployeeRole;
+  phone: string | null;
+  location_id: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeWithLocation extends Employee {
+  location?: Location | null;
+}
