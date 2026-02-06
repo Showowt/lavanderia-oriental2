@@ -54,11 +54,8 @@ export async function middleware(request: NextRequest) {
     // IMPORTANT: getUser() is more reliable than getSession() for middleware
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    // Login page - redirect to dashboard if already logged in
+    // Login page - always allow access, let client handle redirect
     if (pathname === '/login') {
-      if (user) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
       return response;
     }
 
