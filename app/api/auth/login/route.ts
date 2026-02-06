@@ -1,5 +1,4 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +12,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const cookieStore = await cookies();
+    // Create response first to set cookies on it
+    let response = NextResponse.json({ success: false, error: 'Pending' });
+    const cookiesToSet: { name: string; value: string; options?: CookieOptions }[] = [];
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,16 +22,10 @@ export async function POST(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            return request.cookies.getAll();
           },
-          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Server component limitation
-            }
+          setAll(cookies: { name: string; value: string; options?: CookieOptions }[]) {
+            cookies.forEach((cookie) => cookiesToSet.push(cookie));
           },
         },
       }
@@ -55,8 +50,8 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Create response with success
-    const response = NextResponse.json({
+    // Create success response
+    response = NextResponse.json({
       success: true,
       user: {
         id: data.user?.id,
@@ -64,26 +59,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Manually set auth cookies on response for reliability
-    const accessToken = data.session.access_token;
-    const refreshToken = data.session.refresh_token;
-    const expiresAt = data.session.expires_at;
-
-    // Set Supabase auth cookies
-    response.cookies.set('sb-access-token', accessToken, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-
-    response.cookies.set('sb-refresh-token', refreshToken, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+    // Apply all cookies that Supabase wants to set
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
     });
 
     return response;
