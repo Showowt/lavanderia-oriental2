@@ -3,64 +3,69 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
-  let res = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
-  });
+  const res = NextResponse.next();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return req.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-          res = NextResponse.next({
-            request: {
-              headers: req.headers,
-            },
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            res.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Refresh session if exists
-  const { data: { session } } = await supabase.auth.getSession();
-
+  // Skip middleware for static files and API routes (except protected ones)
   const pathname = req.nextUrl.pathname;
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/auth', '/api/whatsapp/webhook'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings'];
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-
-  // If not authenticated and trying to access protected route
-  if (!session && isProtectedRoute) {
-    const redirectUrl = new URL('/login', req.url);
-    return NextResponse.redirect(redirectUrl);
+  // Always allow these paths
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/whatsapp') ||
+    pathname.startsWith('/api/setup') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/cron') ||
+    pathname.includes('.') // Static files
+  ) {
+    return res;
   }
 
-  // If authenticated and on login page, redirect to dashboard
-  if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
-  }
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getAll();
+          },
+          setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              res.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
 
-  return res;
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // Public routes
+    if (pathname === '/login' || pathname === '/') {
+      if (session) {
+        // Already logged in, redirect to dashboard
+        return NextResponse.redirect(new URL('/dashboard', req.url));
+      }
+      return res;
+    }
+
+    // Protected routes - require auth
+    const protectedPaths = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings', '/admin', '/employee'];
+    const isProtected = protectedPaths.some(path => pathname.startsWith(path));
+
+    if (isProtected && !session) {
+      // Not logged in, redirect to login
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    return res;
+  } catch (error) {
+    console.error('Middleware error:', error);
+    // On error, allow request to proceed
+    return res;
+  }
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

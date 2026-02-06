@@ -1,170 +1,171 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { BubbleBackground } from '@/components/effects/BubbleBackground';
+import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Create Supabase client directly
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('admin@lavanderiaoriental.com');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [debugInfo, setDebugInfo] = useState('');
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setDebugInfo('Session found, redirecting...');
+          window.location.href = '/dashboard';
+        }
+      } catch (e) {
+        console.error('Session check error:', e);
+      }
+    };
+    checkSession();
+  }, []);
+
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    if (!email || !password) {
-      setError('Email y contraseña son requeridos');
-      setLoading(false);
-      return;
-    }
+    setDebugInfo('Starting login...');
 
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        setError(authError.message);
+      // Validate inputs
+      if (!email || !password) {
+        setError('Email y contraseña son requeridos');
         setLoading(false);
         return;
       }
 
-      if (data.session) {
-        // Force a hard refresh to update cookies
-        window.location.href = '/dashboard';
-      } else {
-        setError('No se pudo crear la sesión');
+      setDebugInfo('Creating Supabase client...');
+
+      // Create fresh Supabase client
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        }
+      });
+
+      setDebugInfo('Attempting sign in...');
+
+      // Sign in
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        setError(authError.message);
+        setDebugInfo(`Auth error: ${authError.message}`);
         setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Error al iniciar sesión');
+
+      if (!data.session) {
+        setError('No session returned');
+        setDebugInfo('No session in response');
+        setLoading(false);
+        return;
+      }
+
+      setDebugInfo('Login successful! Redirecting...');
+
+      // Small delay then redirect
+      setTimeout(() => {
+        window.location.replace('/dashboard');
+      }, 500);
+
+    } catch (err: any) {
+      console.error('Login exception:', err);
+      setError(err.message || 'Error al iniciar sesión');
+      setDebugInfo(`Exception: ${err.message}`);
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-accent-50 overflow-hidden">
-      {/* Interactive Bubble Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-brand-100/50 via-transparent to-accent-100/30">
-        <BubbleBackground bubbleCount={30} interactive={true} />
-      </div>
-
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-accent-200/40 rounded-full blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-        <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-brand-300/20 rounded-full blur-3xl animate-fresh-breeze" />
-      </div>
-
-      <div className="relative w-full max-w-md px-4 animate-fade-in-up">
-        <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-strong border border-white/60 p-8">
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl mb-4 shadow-glow">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="13" r="7" strokeWidth="2" />
-                <circle cx="12" cy="13" r="3" strokeWidth="2" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 6h14M8 6V4h8v2" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Lavandería Oriental
-            </h1>
-            <p className="text-slate-500 mt-1">Panel de Administración</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+              <circle cx="12" cy="12" r="4" strokeWidth="2" />
+            </svg>
           </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                Correo electrónico
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="admin@lavanderiaoriental.com"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                Contraseña
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full group"
-              size="lg"
-              loading={loading}
-            >
-              <span className="flex items-center gap-2">
-                Iniciar sesión
-                <svg
-                  className="w-4 h-4 transition-transform group-hover:translate-x-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </span>
-            </Button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-400">
-              Plataforma de gestión con IA para WhatsApp
-            </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full text-xs text-slate-500">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-              </span>
-              Powered by AI
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Lavandería Oriental</h1>
+          <p className="text-gray-500">Panel de Administración</p>
         </div>
 
-        <div className="mt-6 text-center text-sm text-slate-500">
-          <p>¿Primera vez? Contacta al administrador para obtener acceso.</p>
+        {/* Error */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              placeholder="admin@lavanderiaoriental.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+          >
+            {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+          </button>
+        </form>
+
+        {/* Debug info */}
+        {debugInfo && (
+          <div className="mt-4 p-3 bg-gray-100 rounded-lg text-xs text-gray-600 font-mono">
+            {debugInfo}
+          </div>
+        )}
+
+        {/* Help */}
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>Credenciales:</p>
+          <p className="font-mono text-xs mt-1">admin@lavanderiaoriental.com</p>
+          <p className="font-mono text-xs">Lavanderia2024</p>
         </div>
       </div>
     </div>
