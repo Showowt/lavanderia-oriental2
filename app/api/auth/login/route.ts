@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    // Create response first to set cookies on it
-    let response = NextResponse.json({ success: false, error: 'Pending' });
     const cookiesToSet: { name: string; value: string; options?: CookieOptions }[] = [];
 
     const supabase = createServerClient(
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create success response
-    response = NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: data.user?.id,
