@@ -1,23 +1,27 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
+export async function middleware(request: NextRequest) {
+  // Create response early
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // Skip middleware for static files and API routes (except protected ones)
-  const pathname = req.nextUrl.pathname;
+  const pathname = request.nextUrl.pathname;
 
-  // Always allow these paths
+  // Skip middleware for these paths
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/whatsapp') ||
     pathname.startsWith('/api/setup') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/cron') ||
-    pathname.includes('.') // Static files
+    pathname.includes('.') ||
+    pathname === '/favicon.ico'
   ) {
-    return res;
+    return response;
   }
 
   try {
@@ -27,45 +31,84 @@ export async function middleware(req: NextRequest) {
       {
         cookies: {
           getAll() {
-            return req.cookies.getAll();
+            return request.cookies.getAll();
           },
           setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              res.cookies.set(name, value, options);
+            cookiesToSet.forEach(({ name, value, options }) =>
+              request.cookies.set(name, value)
+            );
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
             });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            );
           },
         },
       }
     );
 
-    const { data: { session } } = await supabase.auth.getSession();
+    // IMPORTANT: getUser() is more reliable than getSession() for middleware
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    // Public routes
-    if (pathname === '/login' || pathname === '/') {
-      if (session) {
-        // Already logged in, redirect to dashboard
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+    // Login page - redirect to dashboard if already logged in
+    if (pathname === '/login') {
+      if (user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
-      return res;
+      return response;
     }
 
-    // Protected routes - require auth
+    // Home page - redirect based on auth status
+    if (pathname === '/') {
+      if (user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // Protected routes
+    const protectedPaths = [
+      '/dashboard',
+      '/conversations',
+      '/orders',
+      '/escalations',
+      '/customers',
+      '/settings',
+      '/admin',
+      '/employee'
+    ];
+
+    const isProtectedRoute = protectedPaths.some(path => pathname.startsWith(path));
+
+    if (isProtectedRoute && !user) {
+      const redirectUrl = new URL('/login', request.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    return response;
+  } catch (e) {
+    console.error('Middleware error:', e);
+    // On error, redirect to login for protected routes
     const protectedPaths = ['/dashboard', '/conversations', '/orders', '/escalations', '/customers', '/settings', '/admin', '/employee'];
-    const isProtected = protectedPaths.some(path => pathname.startsWith(path));
-
-    if (isProtected && !session) {
-      // Not logged in, redirect to login
-      return NextResponse.redirect(new URL('/login', req.url));
+    if (protectedPaths.some(path => pathname.startsWith(path))) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-
-    return res;
-  } catch (error) {
-    console.error('Middleware error:', error);
-    // On error, allow request to proceed
-    return res;
+    return response;
   }
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
