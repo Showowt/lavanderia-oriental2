@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { login } from './actions';
+import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { BubbleBackground } from '@/components/effects/BubbleBackground';
@@ -9,18 +10,52 @@ import { BubbleBackground } from '@/components/effects/BubbleBackground';
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await login(formData);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-    if (result?.error) {
-      setError(result.error);
+    if (!email || !password) {
+      setError('Email y contraseña son requeridos');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        // Force a hard refresh to update cookies
+        window.location.href = '/dashboard';
+      } else {
+        setError('No se pudo crear la sesión');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Error al iniciar sesión');
       setLoading(false);
     }
-    // If no error, the server action will redirect
   }
 
   return (
@@ -55,7 +90,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form action={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
