@@ -4,6 +4,8 @@ import { locations } from '@/lib/data/locations';
 import { services } from '@/lib/data/services';
 import { whatsappLinks, WHATSAPP_DISPLAY } from '@/lib/whatsapp';
 import { Testimonials } from '@/components/Testimonials';
+import { SofiaShowcase } from '@/components/SofiaShowcase';
+import { FAQ } from '@/components/FAQ';
 
 export const metadata: Metadata = {
   title: 'Lavandería Oriental | Servicio de Lavandería Profesional en El Salvador',
@@ -189,8 +191,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Sofia AI Showcase */}
+      <SofiaShowcase />
+
       {/* Testimonials */}
       <Testimonials />
+
+      {/* FAQ Section */}
+      <FAQ />
 
       {/* Locations Section */}
       <section className="py-20 bg-gray-50" id="ubicaciones">
