@@ -11,7 +11,21 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Skip middleware for these paths - always allow through
+  // Public routes - always allow through without auth
+  const publicPaths = [
+    '/',
+    '/servicios',
+    '/ubicaciones',
+    '/franquicias',
+    '/legal',
+    '/login',
+  ];
+
+  const isPublicRoute = publicPaths.some(path =>
+    pathname === path || pathname.startsWith(path + '/')
+  );
+
+  // Skip middleware for static assets, API routes, and public pages
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/whatsapp') ||
@@ -20,13 +34,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/cron') ||
     pathname.startsWith('/debug') ||
     pathname.includes('.') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    isPublicRoute
   ) {
-    return response;
-  }
-
-  // Login page - always allow, no redirect
-  if (pathname === '/login') {
     return response;
   }
 
@@ -61,14 +71,6 @@ export async function middleware(request: NextRequest) {
 
     // Also check for our custom auth cookies as backup
     const hasAccessToken = request.cookies.has('sb-access-token');
-
-    // Home page - redirect based on auth status
-    if (pathname === '/') {
-      if (user || hasAccessToken) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
 
     // Protected routes
     const protectedPaths = [
