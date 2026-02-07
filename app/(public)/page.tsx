@@ -1,7 +1,18 @@
 import Link from 'next/link';
+import { Metadata } from 'next';
 import { locations } from '@/lib/data/locations';
 import { services } from '@/lib/data/services';
 import { whatsappLinks, WHATSAPP_DISPLAY } from '@/lib/whatsapp';
+import { Testimonials } from '@/components/Testimonials';
+
+export const metadata: Metadata = {
+  title: 'Lavandería Oriental | Servicio de Lavandería Profesional en El Salvador',
+  description: 'Tu ropa limpia, fresca y cuidada. 5 sucursales en El Salvador con delivery disponible. Lavado desde $3.25/libra. Agenda por WhatsApp y recibe tu ropa el mismo día.',
+  openGraph: {
+    title: 'Lavandería Oriental | Tu Ropa Limpia, Fresca y Cuidada',
+    description: '5 sucursales en El Salvador. Lavado profesional desde $3.25/libra. Delivery disponible. Respuesta inmediata por WhatsApp.',
+  },
+};
 
 export default function LandingPage() {
   return (
@@ -177,6 +188,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials */}
+      <Testimonials />
 
       {/* Locations Section */}
       <section className="py-20 bg-gray-50" id="ubicaciones">

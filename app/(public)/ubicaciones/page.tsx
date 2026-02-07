@@ -2,9 +2,15 @@ import Link from 'next/link';
 import { locations } from '@/lib/data/locations';
 import { whatsappLinks } from '@/lib/whatsapp';
 
-export const metadata = {
-  title: 'Ubicaciones | Lavanderia Oriental',
-  description: '5 ubicaciones de Lavanderia Oriental en El Salvador: San Miguel, Usulutan, Lourdes Colon, Santa Ana y La Union.',
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Sucursales y Ubicaciones | 5 Locales en El Salvador',
+  description: 'Encuentra tu Lavandería Oriental más cercana: San Miguel, Usulután, Lourdes Colón, Santa Ana y La Unión. Horarios, direcciones y delivery disponible.',
+  openGraph: {
+    title: 'Sucursales Lavandería Oriental | El Salvador',
+    description: '5 ubicaciones estratégicas en El Salvador. Horario Lun-Sab 7am-6pm. Delivery disponible en todas las zonas.',
+  },
 };
 
 export default function UbicacionesPage() {

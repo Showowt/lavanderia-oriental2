@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { whatsappLinks } from '@/lib/whatsapp';
 
+// Note: Metadata must be in a separate file for client components
+// See app/(public)/franquicias/metadata.ts
+
 export default function FranquiciasPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -15,12 +18,35 @@ export default function FranquiciasPage() {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit to API
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/franchise', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        setError(data.error || 'Error al enviar la solicitud');
+      }
+    } catch (err) {
+      setError('Error de conexión. Por favor intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -259,11 +285,28 @@ export default function FranquiciasPage() {
                   />
                 </div>
 
+                {error && (
+                  <div className="bg-red-500/20 border border-red-400/50 text-red-100 px-4 py-3 rounded-xl text-sm">
+                    {error}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-6 py-4 rounded-xl transition-colors text-lg"
+                  disabled={loading}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-yellow-400/50 text-gray-900 font-semibold px-6 py-4 rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
                 >
-                  Enviar Solicitud
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Enviando...
+                    </>
+                  ) : (
+                    'Enviar Solicitud'
+                  )}
                 </button>
 
                 <p className="text-blue-200 text-sm text-center">

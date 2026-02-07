@@ -14,8 +14,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!service) return { title: 'Servicio no encontrado' };
 
   return {
-    title: `${service.name} | Lavanderia Oriental`,
-    description: service.fullDescription,
+    title: `${service.name} | Precio $${service.pricing.basePrice.toFixed(2)} ${service.pricing.unitLabel}`,
+    description: `${service.fullDescription} Precio: $${service.pricing.basePrice.toFixed(2)} ${service.pricing.unitLabel}. Tiempo de entrega: ${service.turnaroundTime}. Agenda por WhatsApp.`,
+    openGraph: {
+      title: `${service.name} - Lavandería Oriental`,
+      description: `${service.shortDescription} Desde $${service.pricing.basePrice.toFixed(2)} ${service.pricing.unitLabel}.`,
+    },
   };
 }
 

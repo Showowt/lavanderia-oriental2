@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { whatsappLinks, WHATSAPP_DISPLAY } from '@/lib/whatsapp';
+import { GoogleAnalytics } from '@/components/Analytics';
 
 export default function PublicLayout({
   children,
@@ -8,6 +9,7 @@ export default function PublicLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
+      <GoogleAnalytics />
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="container mx-auto px-4">

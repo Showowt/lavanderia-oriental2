@@ -15,8 +15,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!location) return { title: 'Ubicacion no encontrada' };
 
   return {
-    title: `Lavanderia Oriental ${location.name} | El Salvador`,
-    description: `Lavanderia Oriental en ${location.name}. ${location.address}. Horario: ${location.hours.weekdays}. Delivery disponible.`,
+    title: `Lavandería Oriental ${location.name} | Sucursal ${location.city}`,
+    description: `Lavandería Oriental en ${location.name}, ${location.city}. Dirección: ${location.address}. Horario: Lun-Sab ${location.hours.weekdays}. ${location.deliveryAvailable ? 'Delivery disponible.' : ''} Contacto por WhatsApp.`,
+    openGraph: {
+      title: `Lavandería Oriental ${location.name}`,
+      description: `Sucursal en ${location.city}. ${location.address}. Horario: ${location.hours.weekdays}. Agenda por WhatsApp.`,
+    },
   };
 }
 

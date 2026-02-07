@@ -2,9 +2,15 @@ import Link from 'next/link';
 import { services } from '@/lib/data/services';
 import { whatsappLinks } from '@/lib/whatsapp';
 
-export const metadata = {
-  title: 'Servicios | Lavanderia Oriental',
-  description: 'Servicios de lavanderia profesional en El Salvador. Lavado por libra, secado, edredones, planchado y delivery.',
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Servicios de Lavandería | Precios y Opciones',
+  description: 'Lavado por libra desde $3.25, secado, edredones desde $6.50, planchado $1.50/pieza, delivery $2. Precios transparentes, calidad garantizada en El Salvador.',
+  openGraph: {
+    title: 'Servicios de Lavandería Oriental | Precios Transparentes',
+    description: 'Lavado profesional desde $3.25/libra. Edredones, planchado, delivery disponible. 5 sucursales en El Salvador.',
+  },
 };
 
 export default function ServiciosPage() {
