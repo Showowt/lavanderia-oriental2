@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -12,22 +12,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const cookiesToSet: { name: string; value: string; options?: CookieOptions }[] = [];
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookies: { name: string; value: string; options?: CookieOptions }[]) {
-            cookies.forEach((cookie) => cookiesToSet.push(cookie));
-          },
-        },
-      }
-    );
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -48,7 +36,7 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // Create success response
+    // Create success response with cookies
     const response = NextResponse.json({
       success: true,
       user: {
@@ -57,9 +45,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Apply all cookies that Supabase wants to set
-    cookiesToSet.forEach(({ name, value, options }) => {
-      response.cookies.set(name, value, options);
+    // Set auth cookies directly
+    const cookieOptions = {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    };
+
+    // Set the Supabase auth tokens as cookies
+    response.cookies.set('sb-access-token', data.session.access_token, cookieOptions);
+    response.cookies.set('sb-refresh-token', data.session.refresh_token, {
+      ...cookieOptions,
+      maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
     return response;
